@@ -14,10 +14,10 @@ import (
 	"syscall"
 	"time"
 
-	"openpak/x360-kdc/internal/accountcore"
-	"openpak/x360-kdc/internal/config"
-	"openpak/x360-kdc/internal/tlsfront"
-	"openpak/x360-kdc/internal/xuacs"
+	"github.com/openpak/x360-common/accountcore"
+	"github.com/openpak/x360-common/config"
+	"github.com/openpak/x360-xuacs/internal/tlsfront"
+	"github.com/openpak/x360-xuacs/internal/xuacs"
 )
 
 func main() {

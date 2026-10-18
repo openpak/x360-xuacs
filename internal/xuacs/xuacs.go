@@ -33,8 +33,8 @@ import (
 	"sync"
 	"time"
 
-	"openpak/x360-kdc/internal/accountcore"
-	"openpak/x360-kdc/internal/gateway"
+	"github.com/openpak/x360-common/accountcore"
+	"github.com/openpak/x360-common/wire"
 )
 
 // Paths of the endpoints (matched case-insensitively).
@@ -177,7 +177,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	log.Info("request", "method", r.Method, "path", r.URL.Path, "user_agent", r.Header.Get("User-Agent"),
 		"content_type", r.Header.Get("Content-Type"), "x_schema_ver", r.Header.Get("X-Schema-Ver"),
-		"account", r.Header.Get(gateway.AccountHeader), "body_len", len(body), "body_hex", hex.EncodeToString(shown),
+		"account", r.Header.Get(wire.AccountHeader), "body_len", len(body), "body_hex", hex.EncodeToString(shown),
 		"remote", r.RemoteAddr)
 
 	if strings.EqualFold(r.URL.Path, PathValidateCert) {
@@ -217,7 +217,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	case strings.ToLower(PathAccountInfo):
 		out, err = h.accountInfo(r.Context(), body)
 	case strings.ToLower(PathRecover):
-		out, err = h.recover(r.Context(), body, r.Header.Get(gateway.AccountHeader))
+		out, err = h.recover(r.Context(), body, r.Header.Get(wire.AccountHeader))
 	default:
 		http.NotFound(w, r)
 		log.Info("response", "path", r.URL.Path, "status", w.status)

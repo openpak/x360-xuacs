@@ -42,7 +42,7 @@ import (
 	"strings"
 	"time"
 
-	"openpak/x360-kdc/internal/accountcore"
+	"github.com/openpak/x360-common/accountcore"
 )
 
 // WLID host names and paths.

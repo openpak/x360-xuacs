@@ -8,8 +8,7 @@ Description=OpenPak Xbox 360 account service (x360-xuacs): /xuacs/*.ashx, Live s
 
 [Container]
 ContainerName=openpak-x360-xuacs
-Image=ghcr.io/openpak/x360-kdc:latest
-Entrypoint=/usr/local/bin/x360-xuacs
+Image=ghcr.io/openpak/x360-xuacs:latest
 AutoUpdate=registry
 Network=openpak.network
 # Pin an unused address (run pin-ips.sh --apply for new quadlets).

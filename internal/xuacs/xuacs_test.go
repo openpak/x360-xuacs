@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"openpak/x360-kdc/internal/accountcore"
+	"github.com/openpak/x360-common/accountcore"
 )
 
 // ---- fake account core (gRPC framing over cleartext HTTP/2) ----

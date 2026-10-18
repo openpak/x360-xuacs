@@ -17,9 +17,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/openpak/x360-common/accountcore"
 	"io"
 	"net/http"
-	"openpak/x360-kdc/internal/accountcore"
 	"strings"
 	"time"
 )
