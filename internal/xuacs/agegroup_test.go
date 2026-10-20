@@ -69,3 +69,28 @@ func TestNativeLogoffAcknowledgement(t *testing.T) {
 		t.Fatal("accepted truncated logoff")
 	}
 }
+
+func TestLogoffAfterTicketUserRemoval(t *testing.T) {
+	s, err := OpenStore("", time.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.OnlineXUID("owner", 0x0009005f5139dadb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = s.Profile("owner", "478700668470", "Xbox360Test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &Handler{Store: s}
+	req, _ := hex.DecodeString("00040000080000000300000025e4cd2d00000000000000000000000000000000dbda39515f000900")
+	if err = h.consoleLogoff(req, "", "478700668470@xbox.com"); err != nil {
+		t.Fatal(err)
+	}
+	for _, console := range []string{"", "111111111111@xbox.com", "malformed"} {
+		if err = h.consoleLogoff(req, "", console); err == nil {
+			t.Errorf("accepted unbound console %q", console)
+		}
+	}
+}

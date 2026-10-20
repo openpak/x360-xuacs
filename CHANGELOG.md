@@ -1,5 +1,7 @@
 # Changelog
 
+- 2026-10-20: v0.9.3 acknowledge a departing profile after its active ticket is replaced, bound to its issuing console; log rejected presence status.
+
 - 2026-10-20: v0.9.2 native age-group replies from account-core birthdays, ticket-bound policy requests, and empty native logoff acknowledgements.
 
 - 2026-10-20: v0.9.1 native presence-alive friend/block snapshots from account core,
