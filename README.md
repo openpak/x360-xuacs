@@ -48,5 +48,6 @@ An uncollected birthday retains Child policy; malformed/future dates and core
 failures return service unavailable. The requested XUID must be on the tunnel
 ticket. Native presence logoff (`0x400`, XRL `0xF`) acknowledges the ticket-bound
 XUID with an empty HTTP 200. If the active ticket has already dropped the user,
-the profile must instead have been issued to the authenticated console. This acknowledgement it does not yet implement account-core session
-teardown or cross-platform offline propagation.
+the profile must instead have been issued to the authenticated console. This acknowledgement
+does not yet implement account-core session teardown or cross-platform offline
+propagation.
