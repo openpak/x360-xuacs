@@ -246,3 +246,16 @@ func (s *Store) ConsoleProfiles(console string) []ConsoleProfile {
 	}
 	return out
 }
+
+// AccountByOnlineXUID is the reverse of OnlineXUID for an already issued XUID.
+func (s *Store) AccountByOnlineXUID(x uint64) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	want := fmt.Sprintf("%016x", x)
+	for id, a := range s.d.Accounts {
+		if a.Online == want {
+			return id, true
+		}
+	}
+	return "", false
+}
