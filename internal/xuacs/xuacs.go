@@ -195,7 +195,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.xpresence(w, r, body) || h.revocation(w, r, body) || h.profileSettings(w, r, body) || h.xstats(w, r, body) {
+	if h.xpresence(w, r, body) || h.revocation(w, r, body) || h.profileSettings(w, r, body) || h.xstats(w, r, body) || h.vetString(w, r, body) {
 		return
 	}
 
