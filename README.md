@@ -41,3 +41,11 @@ This implements the initial accepted-friend/block snapshot. Friend-request
 mutations, live friend-presence push updates, activity feed and Avatar Store
 remain separate work. A server-side snapshot does not restore the dashboard's
 missing online Social content package, nor establish physical-console parity.
+
+Native service-5 opcode `0x63C` (`XeUserGetAgeGroup.ashx`) derives Child/Teen/Adult
+from the active account's core birthday (under 13 / under 18 / 18 and older, UTC).
+An uncollected birthday retains Child policy; malformed/future dates and core
+failures return service unavailable. The requested XUID must be on the tunnel
+ticket. Native presence logoff (`0x400`, XRL `0xF`) acknowledges the ticket-bound
+XUID with an empty HTTP 200; it does not yet implement account-core session
+teardown or cross-platform offline propagation.

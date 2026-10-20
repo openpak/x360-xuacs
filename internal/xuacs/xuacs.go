@@ -210,6 +210,8 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		out, err = h.login(r.Context(), body)
 	case strings.ToLower(PathGamertag):
 		out, err = h.gamertag(r.Context(), body)
+	case strings.ToLower(PathAgeGroup):
+		out, err = h.ageGroup(r.Context(), body, r.Header.Get(wire.UsersHeader))
 	case strings.ToLower(PathUserType):
 		out, err = h.userType(body)
 	case strings.ToLower(PathFamily):

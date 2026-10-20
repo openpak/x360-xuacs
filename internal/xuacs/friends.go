@@ -179,11 +179,28 @@ func (h *Handler) presenceFriends(ctx context.Context, body []byte, usersHeader 
 			return nil, deny(400, "short presence header")
 		}
 		size := uint64(binary.LittleEndian.Uint32(body[4:])) + presenceHeader
-		if size > uint64(len(body)) || size < 0x99 {
+		if size > uint64(len(body)) || size < presenceHeader {
 			return nil, deny(400, "invalid presence length")
 		}
 		e := body[:int(size)]
 		body = body[int(size):]
+		// XRL opcode 0xF logoff: a ticket-bound XUID, no response schema.
+		if binary.LittleEndian.Uint32(e) == 0x400 {
+			if len(e) != 40 {
+				return nil, deny(400, "invalid logoff length")
+			}
+			if users[binary.LittleEndian.Uint64(e[32:])] == "" {
+				return nil, deny(403, "logoff user is not on tunnel ticket")
+			}
+			count++
+			if count > 4 {
+				return nil, deny(400, "too many presence entries")
+			}
+			continue
+		}
+		if len(e) < 0x99 {
+			return nil, deny(400, "short presence alive")
+		}
 		if binary.LittleEndian.Uint32(e) != 0x401 || int(binary.LittleEndian.Uint16(e[0x28:]))+0x98 != len(e) {
 			return nil, deny(400, "unsupported presence request")
 		}
