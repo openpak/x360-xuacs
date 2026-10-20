@@ -16,6 +16,7 @@ import (
 
 	"github.com/openpak/x360-common/accountcore"
 	"github.com/openpak/x360-common/config"
+	"github.com/openpak/x360-common/wire"
 	"github.com/openpak/x360-xuacs/internal/tlsfront"
 	"github.com/openpak/x360-xuacs/internal/xuacs"
 )
@@ -103,7 +104,7 @@ func main() {
 		}()
 		go func() { <-ctx.Done(); isrv.Close() }()
 	}
-	srv := &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Handler: wire.Guard(os.Getenv("X360_GATEWAY_KEY"), h), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		<-ctx.Done()
 		sc, cancel := context.WithTimeout(context.Background(), 5*time.Second)
