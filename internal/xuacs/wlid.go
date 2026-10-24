@@ -133,6 +133,9 @@ func (h *Handler) openTicket(magic string, b []byte) (*WLIDTicket, error) {
 	if h.now().After(t.Expires) {
 		return nil, errors.New("ticket expired")
 	}
+	if h.Store != nil && h.Store.Denied(t.Account) {
+		return nil, errors.New("account suspended")
+	}
 	return t, nil
 }
 

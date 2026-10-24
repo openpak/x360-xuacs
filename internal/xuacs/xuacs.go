@@ -456,6 +456,9 @@ func (h *Handler) login(ctx context.Context, body []byte) ([]byte, error) {
 		return nil, deny(http.StatusForbidden, "0x608: account not active")
 	}
 	tok, err := h.Store.NewToken(acct, email)
+	if errors.Is(err, ErrDenied) {
+		return nil, deny(http.StatusForbidden, "0x608: account not active")
+	}
 	if err != nil {
 		return nil, err
 	}

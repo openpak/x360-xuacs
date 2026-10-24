@@ -68,6 +68,8 @@ func main() {
 	defer stop()
 	log.Info("x360-xuacs listening", "addr", ln.Addr(), "state", cfg.State, "rsa_key", cfg.RSAKey, "debug", cfg.Debug)
 	go h.RunReconcile(ctx, time.Minute)
+	// Bans and deletions from the core's event stream (internal/xuacs/events.go).
+	go h.RunEvents(ctx, xuacs.NewCoreEvents(cfg.CoreURL, cfg.CoreToken), 5*time.Second)
 	if cfg.TLSAddr != "" {
 		front, err := tlsfront.LoadOrCreate(filepath.Join(cfg.State, "wlid-ca"))
 		if err != nil {

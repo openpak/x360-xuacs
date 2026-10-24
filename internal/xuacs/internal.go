@@ -89,6 +89,9 @@ func (h *Handler) userKey(r *http.Request, console, gamertag string) (any, int) 
 	// any console profile to the KDC.
 	var profiles []ConsoleProfile
 	for _, p := range h.Store.ConsoleProfiles(console) {
+		if h.Store.Denied(p.Account) { // banned or closed: no key for the KDC
+			continue
+		}
 		handle, err := h.Core.Handle(r.Context(), p.Account)
 		if errors.Is(err, accountcore.ErrInactive) {
 			continue

@@ -46,6 +46,17 @@ type tokenRec struct {
 type stateFile struct {
 	Accounts map[string]*accountRec `json:"accounts"`
 	Tokens   map[string]*tokenRec   `json:"tokens"`
+	// Standing is every account the core's event stream has denied (events.go),
+	// and EventCursor the version of the last event applied.
+	Standing    map[string]*standingRec `json:"standing,omitempty"`
+	EventCursor uint64                  `json:"event_cursor,omitempty"`
+}
+
+// standingRec is why an account is denied. A ban and a closure are kept apart
+// so restoring a banned account keeps it banned.
+type standingRec struct {
+	Banned  bool `json:"banned,omitempty"`
+	Closing bool `json:"closing,omitempty"`
 }
 
 // Store keeps the session tokens and the profiles xuacs issued (online XUID per
@@ -90,6 +101,9 @@ func OpenStore(dir string, now func() time.Time) (*Store, error) {
 	return s, nil
 }
 
+// ErrDenied is an account the event stream has banned or closed.
+var ErrDenied = errors.New("account suspended")
+
 func (s *Store) save() error {
 	if s.path == "" {
 		return nil
@@ -107,6 +121,9 @@ func (s *Store) save() error {
 
 // NewToken issues a random 28-byte token bound to the account.
 func (s *Store) NewToken(account, email string) ([]byte, error) {
+	if s.Denied(account) {
+		return nil, ErrDenied
+	}
 	tok := make([]byte, 28)
 	if _, err := rand.Read(tok); err != nil {
 		return nil, err
@@ -129,7 +146,7 @@ func (s *Store) Token(tok []byte) (account, email string, ok bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	t := s.d.Tokens[hex.EncodeToString(tok)]
-	if t == nil || s.now().After(t.Expires) {
+	if t == nil || s.now().After(t.Expires) || s.d.Standing[t.Account] != nil {
 		return "", "", false
 	}
 	return t.Account, t.Email, true
@@ -258,4 +275,75 @@ func (s *Store) AccountByOnlineXUID(x uint64) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// Denied reports whether the event stream has banned or closed the account.
+func (s *Store) Denied(account string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.d.Standing[account] != nil
+}
+
+// Cursor is the version of the last applied core event.
+func (s *Store) Cursor() uint64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.d.EventCursor
+}
+
+// ApplyEvent applies one core event's action and moves the cursor to version,
+// in one write. A version at or below the cursor is a redelivery and changes
+// nothing (applied false).
+//
+//	Ban, Suspend  deny the account and drop its session tokens
+//	Unban, Restore lift that reason (the other one stays)
+//	Purge         final erasure: drop the account's profiles (online XUID,
+//	              per-console offline XUIDs, XenonKeys, gamertags), its tokens and
+//	              its standing, which releases the XUID and gamertag for reuse
+func (s *Store) ApplyEvent(version uint64, account string, a Action) (applied bool, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if version <= s.d.EventCursor {
+		return false, nil
+	}
+	if s.d.Standing == nil {
+		s.d.Standing = map[string]*standingRec{}
+	}
+	st := s.d.Standing[account]
+	if st == nil {
+		st = &standingRec{}
+	}
+	switch a {
+	case ActBan:
+		st.Banned = true
+	case ActUnban:
+		st.Banned = false
+	case ActSuspend:
+		st.Closing = true
+	case ActRestore:
+		st.Closing = false
+	case ActPurge:
+		delete(s.d.Accounts, account)
+		delete(s.d.Standing, account)
+		s.dropTokensLocked(account)
+	}
+	switch a {
+	case ActBan, ActUnban, ActSuspend, ActRestore:
+		if st.Banned || st.Closing {
+			s.d.Standing[account] = st
+			s.dropTokensLocked(account)
+		} else {
+			delete(s.d.Standing, account)
+		}
+	}
+	s.d.EventCursor = version
+	return true, s.save()
+}
+
+func (s *Store) dropTokensLocked(account string) {
+	for k, t := range s.d.Tokens {
+		if t.Account == account {
+			delete(s.d.Tokens, k)
+		}
+	}
 }

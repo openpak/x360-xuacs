@@ -16,6 +16,18 @@ Part of OpenPak's Xbox 360 stack: one repository and one image per service ([`x3
 
 Environment `X360_XUACS_*` (see `deploy/primary/openpak-x360-xuacs.container` and `x360-common/config`): `ADDR`, `STATE`, `RSA_KEY`, `TLS_ADDR`, `INTERNAL_ADDR`, `INTERNAL_KEY`, `ACCOUNT_CORE_URL/TOKEN`, `DEBUG`.
 
+## Account events
+
+The core's event stream (`Events/PollEvents`, same `ACCOUNT_CORE_URL`/`TOKEN`, no new variable) is polled
+every 5 s (`internal/xuacs/events.go`). `account_banned` and `account_delete_started` deny the account:
+its session tokens are dropped, sign-in is refused, the KDC gets no user key for it and its WLID tickets
+stop verifying. `account_unbanned` and `account_restored` lift their own reason (a restored but banned
+account stays denied); a suspension keeps the online XUID, console profiles and gamertag held.
+`account_deleted` (final erasure) purges the account's profiles (online XUID, offline XUIDs, XenonKeys,
+gamertags) and tokens, which releases the XUID for reuse; the x360 links themselves are erased by the core.
+The cursor is stored in `xuacs.json` with each effect, so redelivery is a no-op; a state without one
+replays from the start, which converges on the same standing.
+
 ## Build and test
 
 `TMPDIR=<scratch> X360_KDC_TESTKEYS=<dir with the dev keys> go test -mod=vendor ./...`
