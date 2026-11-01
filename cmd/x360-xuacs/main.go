@@ -78,7 +78,6 @@ func main() {
 		}
 		front.Fallback = xuacs.WLIDLoginHost
 		front.Log = log.Info
-		h.TrustLeaf = front.Issued
 		if h.WLIDCA, err = os.ReadFile(filepath.Join(cfg.State, "wlid-ca", "ca.pem")); err != nil {
 			log.Error("wlid ca", "err", err)
 			os.Exit(2)

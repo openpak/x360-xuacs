@@ -1,7 +1,8 @@
 # Fragment of the shared ~/openpak/deploy/traefik/dynamic.yml on the primary host.
 # These blocks belong in the shared dynamic.yml (routers under http.routers,
 # services under http.services), not in a separate file. Copied verbatim from
-# the live file; keep in sync when the shared file changes.
+# the live file; keep in sync when the shared file changes. The /xsig, /xedl, /xpnfront, /msgserver,
+# /xbos and /xstats routes live in their own services' deploy/traefik.yml since v0.10.0.
 tcp:
   routers:
     x360-wlid:
@@ -30,18 +31,6 @@ http:
       entryPoints:
       - web
       rule: PathPrefix(`/xuacs`)
-      priority: 40
-      service: x360-xuacs-http
-    x360-xsig-web:
-      entryPoints:
-      - web
-      rule: PathPrefix(`/xsig`)
-      priority: 40
-      service: x360-xuacs-http
-    x360-xedl-web:
-      entryPoints:
-      - web
-      rule: PathPrefix(`/xedl`)
       priority: 40
       service: x360-xuacs-http
     x360-notice-web:

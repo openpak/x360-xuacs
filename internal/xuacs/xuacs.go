@@ -128,8 +128,6 @@ type Handler struct {
 	MaxSkew time.Duration    // default DefaultMaxSkew
 	// WLIDKey signs the Windows Live ID access and refresh tokens (wlid.go).
 	WLIDKey []byte
-	// TrustLeaf decides /xsig/ValidateCertificate.ashx (xsig.go); nil trusts nothing.
-	TrustLeaf func(der []byte) bool
 	// WLIDCA is the WLID TLS front's CA certificate (PEM), served to x360-xsig.
 	WLIDCA []byte
 
@@ -181,25 +179,6 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		"content_type", r.Header.Get("Content-Type"), "x_schema_ver", r.Header.Get("X-Schema-Ver"),
 		"account", r.Header.Get(wire.AccountHeader), "body_len", len(body), "body_hex", hex.EncodeToString(shown),
 		"remote", r.RemoteAddr)
-
-	if strings.EqualFold(r.URL.Path, PathValidateCert) {
-		out := h.validateCert(body)
-		w.Header().Set("Content-Type", "xon/c")
-		w.Header().Set("Content-Length", strconv.Itoa(len(out)))
-		w.WriteHeader(http.StatusOK)
-		w.Write(out)
-		log.Info("response", "path", r.URL.Path, "status", w.status, "body_hex", hex.EncodeToString(out))
-		return
-	}
-	if id, ok := countryInfoID(r.URL.Path); ok {
-		h.serveCountryInfo(w, r, id)
-		log.Info("response", "path", r.URL.Path, "status", w.status)
-		return
-	}
-
-	if h.xpresence(w, r, body) || h.revocation(w, r, body) || h.profileSettings(w, r, body) || h.xstats(w, r, body) || h.vetString(w, r, body) {
-		return
-	}
 
 	var out []byte
 	var err error
@@ -687,4 +666,26 @@ func reverseBytes(b []byte) []byte {
 		out[len(b)-1-i] = v
 	}
 	return out
+}
+
+// ticketUsers parses the gateway's users header (the tunnel ticket's users):
+// "<online xuid hex>:<account>" entries, at most 4. The gateway strips
+// client-provided versions of this header.
+func ticketUsers(header string) (map[uint64]string, error) {
+	users := make(map[uint64]string)
+	for _, entry := range strings.Split(header, ",") {
+		x, account, ok := strings.Cut(entry, ":")
+		if !ok || len(x) != 16 || account == "" {
+			return nil, deny(403, "missing tunnel user")
+		}
+		xuid, err := strconv.ParseUint(x, 16, 64)
+		if err != nil || xuid>>48 != 9 || users[xuid] != "" {
+			return nil, deny(403, "invalid tunnel user")
+		}
+		users[xuid] = account
+	}
+	if len(users) > 4 {
+		return nil, deny(403, "too many tunnel users")
+	}
+	return users, nil
 }

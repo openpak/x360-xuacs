@@ -2,6 +2,10 @@ package xuacs
 
 import (
 	"context"
+	"errors"
+	"time"
+
+	"github.com/openpak/x360-common/accountcore"
 	"net/http/httptest"
 	"testing"
 
@@ -38,3 +42,48 @@ func TestInternalIdentityAPI(t *testing.T) {
 		t.Fatal("wrong key accepted")
 	}
 }
+
+type graphCore struct {
+	Core
+	failure bool
+	empty   bool
+	owners  []string
+}
+
+func (c *graphCore) ListFriends(_ context.Context, a string) ([]accountcore.Friend, error) {
+	c.owners = append(c.owners, a)
+	if c.failure {
+		return nil, errors.New("unavailable")
+	}
+	if c.empty || a != "owner" {
+		return nil, nil
+	}
+	return []accountcore.Friend{{AccountID: "friend"}, {AccountID: "blocked"}, {AccountID: "hidden"}}, nil
+}
+func (c *graphCore) ListBlocks(_ context.Context, a string) ([]accountcore.Friend, error) {
+	if c.empty || a != "owner" {
+		return nil, nil
+	}
+	return []accountcore.Friend{{AccountID: "blocked"}}, nil
+}
+func (c *graphCore) CanDiscover(_ context.Context, a, b string) (bool, error) {
+	return b != "hidden", nil
+}
+func (c *graphCore) Handle(_ context.Context, a string) (string, error) { return "Friend", nil }
+func (c *graphCore) ActiveXboxLink(_ context.Context, a string) (*accountcore.Link, error) {
+	x := "0009000000000002"
+	if a == "blocked" {
+		x = "0009000000000003"
+	}
+	return &accountcore.Link{AccountID: a, SubjectID: x, PublicCode: "Friend", State: accountcore.StateActive}, nil
+}
+func graphHandler(t *testing.T, c *graphCore) *Handler {
+	t.Helper()
+	s, err := OpenStore(t.TempDir(), time.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &Handler{Core: c, Store: s}
+}
+
+const fixtureUser = "0009005f5139dadb:owner"

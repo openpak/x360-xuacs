@@ -2,6 +2,11 @@
 
 - Unreleased: follow the account core's event stream: bans and started deletions drop the account's session tokens and refuse sign-in, user keys and WLID tickets; unban/restore lift them; final erasure purges its profiles and releases the XUID.
 
+- 2026-11-01: v0.10.0 one repository per Live service: presence and friends (1), XStringVerify (2), CountryInfo
+  (11), certificate validation (12), the revocation list (21) and the /xstats settings and stubs (34, 35) moved to
+  x360-xpnfront, x360-msgserver, x360-xedl, x360-xsig, x360-xbos and x360-xstats; their Traefik routes now point
+  there (replies checked byte for byte against v0.9.7 before the switch).
+
 - 2026-11-01: v0.9.7 internal API for the services being split out of xuacs: identity, online XUID, XUID to
   account, console profiles and the WLID CA (client: x360-common xuacsapi).
 
