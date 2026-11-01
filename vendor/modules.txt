@@ -3,4 +3,5 @@
 github.com/openpak/x360-common/accountcore
 github.com/openpak/x360-common/config
 github.com/openpak/x360-common/wire
+github.com/openpak/x360-common/xuacsapi
 # github.com/openpak/x360-common => ../x360-common

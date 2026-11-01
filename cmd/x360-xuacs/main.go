@@ -79,6 +79,10 @@ func main() {
 		front.Fallback = xuacs.WLIDLoginHost
 		front.Log = log.Info
 		h.TrustLeaf = front.Issued
+		if h.WLIDCA, err = os.ReadFile(filepath.Join(cfg.State, "wlid-ca", "ca.pem")); err != nil {
+			log.Error("wlid ca", "err", err)
+			os.Exit(2)
+		}
 		tsrv := front.Serve(&http.Server{Handler: h.WLID(), ReadHeaderTimeout: 10 * time.Second,
 			ErrorLog: slog.NewLogLogger(log.Handler(), slog.LevelInfo)})
 		tln, err := net.Listen("tcp", cfg.TLSAddr)

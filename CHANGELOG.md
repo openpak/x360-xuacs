@@ -2,6 +2,9 @@
 
 - Unreleased: follow the account core's event stream: bans and started deletions drop the account's session tokens and refuse sign-in, user keys and WLID tickets; unban/restore lift them; final erasure purges its profiles and releases the XUID.
 
+- 2026-11-01: v0.9.7 internal API for the services being split out of xuacs: identity, online XUID, XUID to
+  account, console profiles and the WLID CA (client: x360-common xuacsapi).
+
 - 2026-10-20: v0.9.3 acknowledge a departing profile after its active ticket is replaced, bound to its issuing console; log rejected presence status.
 
 - 2026-10-20: v0.9.2 native age-group replies from account-core birthdays, ticket-bound policy requests, and empty native logoff acknowledgements.

@@ -130,6 +130,8 @@ type Handler struct {
 	WLIDKey []byte
 	// TrustLeaf decides /xsig/ValidateCertificate.ashx (xsig.go); nil trusts nothing.
 	TrustLeaf func(der []byte) bool
+	// WLIDCA is the WLID TLS front's CA certificate (PEM), served to x360-xsig.
+	WLIDCA []byte
 
 	mu    sync.Mutex
 	proxy map[string]time.Time // issued proxy blobs (hex) -> expiry
