@@ -20,7 +20,7 @@ OpenPak's Xbox 360 Account Server.
 | Internal API | User AS exchange for the KDC; online XUIDs, gamertags, console profiles and the WLID CA for x360-xpnfront, x360-xsig and x360-xstats |
 
 Presence and friends, XStringVerify, CountryInfo, certificate validation, the revocation list and the
-`/xstats` settings moved to their own services on 2026-11-01 (see [Protocol](docs/protocol.md)).
+`/xstats` settings moved to their own services (see [Protocol](docs/protocol.md)).
 
 ## Run
 
@@ -30,7 +30,6 @@ See [Deploy](docs/deploy.md).
 ## Docs
 
 - [Protocol](docs/protocol.md)
-- [Evidence](docs/evidence.md)
 - [Deploy](docs/deploy.md)
 - [Notes](docs/notes.md)
 
