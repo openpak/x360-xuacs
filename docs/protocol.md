@@ -4,7 +4,7 @@ The Xbox 360 account service, Live service 5: `/xuacs/*.ashx` (sign-in, profile 
 login (`nexus.passport.com`, `login.live.com`, TLS) and the internal API: the user-key exchange for the KDC, and
 the identity data (online XUIDs, gamertags, console profiles, the WLID CA) for the other Xbox 360 services.
 
-Split out on 2026-11-01 (v0.10.0), one repository per Live service: presence and friends (1) to
+Split out in v0.10.0, one repository per Live service: presence and friends (1) to
 [x360-xpnfront](https://github.com/openpak/x360-xpnfront), XStringVerify (2) to
 [x360-msgserver](https://github.com/openpak/x360-msgserver), CountryInfo (11) to
 [x360-xedl](https://github.com/openpak/x360-xedl), certificate validation (12) to
