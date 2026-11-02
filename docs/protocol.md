@@ -17,3 +17,11 @@ from the active account's core birthday (under 13 / under 18 / 18 and older, UTC
 An uncollected birthday retains Child policy; malformed/future dates and core
 failures return service unavailable. The requested XUID must be on the tunnel
 ticket.
+
+## Account events
+
+The core's event stream (`Events/PollEvents`, same `ACCOUNT_CORE_URL`/`TOKEN`) is polled every 5 s (`internal/xuacs/events.go`). `account_banned` and `account_delete_started` deny the account: its session tokens are dropped, sign-in is refused, the KDC gets no user key for it and its WLID tickets stop verifying. `account_unbanned` and `account_restored` lift their own reason (a restored but banned account stays denied); a suspension keeps the online XUID, console profiles and gamertag held. `account_deleted` (final erasure) purges the account's profiles (online XUID, offline XUIDs, XenonKeys, gamertags) and tokens, which releases the XUID for reuse; the x360 links are erased by the core. The cursor is stored in `xuacs.json` with each effect, so redelivery is a no-op; a state without one replays from the start and converges on the same standing.
+
+## Friends snapshot
+
+Native Friends serves the initial accepted-friend/block snapshot. Friend-request mutations, live presence push, activity feed and Avatar Store are not served. The dashboard's online Social content package is not supplied by the server.
