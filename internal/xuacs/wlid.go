@@ -159,7 +159,6 @@ func (h *Handler) serveWLID(rw http.ResponseWriter, r *http.Request) {
 	}
 	path := strings.ToLower(r.URL.Path)
 	log.Info("wlid request", "method", r.Method, "host", host, "path", r.URL.Path,
-		"user_agent", r.Header.Get("User-Agent"), "content_type", r.Header.Get("Content-Type"),
 		"content_length", r.ContentLength, "remote", r.RemoteAddr)
 	defer func() { log.Info("wlid response", "path", r.URL.Path, "status", w.status) }()
 

@@ -171,14 +171,8 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	w := &statusWriter{ResponseWriter: rw, status: http.StatusOK}
 	body, _ := io.ReadAll(io.LimitReader(r.Body, maxBody))
 	log := h.log()
-	shown := body
-	if len(shown) > 64 {
-		shown = nil // bodies above 64 bytes carry key material and credentials: length only
-	}
-	log.Info("request", "method", r.Method, "path", r.URL.Path, "user_agent", r.Header.Get("User-Agent"),
-		"content_type", r.Header.Get("Content-Type"), "x_schema_ver", r.Header.Get("X-Schema-Ver"),
-		"account", r.Header.Get(wire.AccountHeader), "body_len", len(body), "body_hex", hex.EncodeToString(shown),
-		"remote", r.RemoteAddr)
+	log.Info("request", "method", r.Method, "path", r.URL.Path,
+		"account", r.Header.Get(wire.AccountHeader), "body_len", len(body), "remote", r.RemoteAddr)
 
 	var out []byte
 	var err error
@@ -222,9 +216,6 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(out)
 	log.Info("response", "path", r.URL.Path, "status", w.status, "body_len", len(out))
-	if len(out) <= 64 {
-		log.Debug("response body", "hex", hex.EncodeToString(out))
-	}
 }
 
 // ---- wire helpers ----
