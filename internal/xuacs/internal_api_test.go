@@ -79,7 +79,8 @@ func (c *graphCore) ActiveXboxLink(_ context.Context, a string) (*accountcore.Li
 }
 func graphHandler(t *testing.T, c *graphCore) *Handler {
 	t.Helper()
-	s, err := OpenStore(t.TempDir(), time.Now)
+	s := NewMemoryStore(time.Now)
+	var err error
 	if err != nil {
 		t.Fatal(err)
 	}

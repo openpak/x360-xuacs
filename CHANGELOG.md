@@ -1,5 +1,9 @@
 # Changelog
 
+- 2026-11-03: v0.11.0 state moves to Postgres (schema `x360_xuacs` in database `x360`, `X360_XUACS_DATABASE_URL`, required:
+  the service refuses to start without it). An existing `xuacs.json` is imported once on first start and left in place.
+  The RSA key and WLID key stay files in `X360_XUACS_STATE`.
+
 - Unreleased: follow the account core's event stream: bans and started deletions drop the account's session tokens and refuse sign-in, user keys and WLID tickets; unban/restore lift them; final erasure purges its profiles and releases the XUID.
 
 - 2026-11-01: v0.10.0 one repository per Live service: presence and friends (1), XStringVerify (2), CountryInfo

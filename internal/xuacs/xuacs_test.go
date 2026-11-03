@@ -167,7 +167,7 @@ func newRig(t *testing.T, dir string) *rig {
 		t.Fatal(err)
 	}
 	r := &rig{t: t, core: fc, now: time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)}
-	st, err := OpenStore(dir, func() time.Time { return r.now })
+	st, err := testOpen(t, dir, func() time.Time { return r.now })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -399,7 +399,7 @@ func hex16(x uint64) string {
 }
 
 func mustStore(t *testing.T, dir string, r *rig) *Store {
-	s, err := OpenStore(dir, func() time.Time { return r.now })
+	s, err := testOpen(t, dir, func() time.Time { return r.now })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -492,10 +492,6 @@ func TestStorePersists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fi, err := os.Stat(filepath.Join(dir, "xuacs.json"))
-	if err != nil || fi.Mode().Perm() != 0o600 {
-		t.Fatalf("state file: %v %v", fi, err)
-	}
 	s2 := mustStore(t, dir, r)
 	if _, _, ok := s2.Token(tok); !ok {
 		t.Fatal("token lost on reload")
@@ -533,7 +529,7 @@ func TestGamertagFrom(t *testing.T) {
 }
 
 func TestReconcileProjectsAndIsAdoptable(t *testing.T) {
-	r := newRig(t, t.TempDir())
+	r := newRig(t, "")
 	for i := 0; i < 2; i++ { // idempotent
 		seen, linked, failed, err := r.h.ReconcileAll(context.Background())
 		if err != nil || seen != 2 || failed != 0 || (i == 0 && linked != 2) || (i == 1 && linked != 0) {

@@ -28,7 +28,9 @@ PublishPort=10.212.63.196:20005:10006
 # Must define X360_XUACS_ACCOUNT_CORE_URL (a core gRPC address reachable from the openpak network) and
 # X360_XUACS_ACCOUNT_CORE_TOKEN (the core's internal key). Mode 0600, never committed.
 EnvironmentFile=%h/openpak/deploy/x360-xuacs/core.env
-# Token store, issued profiles and the RSA key. The container user is the image's app (uid 100).
+# db.env defines X360_XUACS_DATABASE_URL (Postgres, schema x360_xuacs; required). Mode 0600, never committed.
+EnvironmentFile=%h/openpak/deploy/x360-xuacs/db.env
+# Keys (RSA, WLID) and the one-time import of the old xuacs.json. The container user is the image's app (uid 100).
 Volume=%h/openpak/deploy/x360-xuacs/state:/var/lib/x360-xuacs:rw,Z
 ReadOnly=true
 DropCapability=ALL

@@ -42,11 +42,16 @@ func main() {
 		log.Error("rsa key", "err", err)
 		os.Exit(2)
 	}
-	store, err := xuacs.OpenStore(cfg.State, time.Now)
+	dbCtx, dbCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	store, err := xuacs.OpenStore(dbCtx, os.Getenv("X360_XUACS_DATABASE_URL"), xuacs.Schema,
+		filepath.Join(cfg.State, "xuacs.json"), time.Now)
+	dbCancel()
 	if err != nil {
-		log.Error("state", "err", err)
+		log.Error("state: X360_XUACS_DATABASE_URL is required and must be reachable", "err", err)
 		os.Exit(2)
 	}
+	defer store.Close()
+	log.Info("state in Postgres", "schema", xuacs.Schema)
 	wlidKey, err := xuacs.LoadOrCreateWLIDKey(filepath.Join(cfg.State, "wlid-key.bin"))
 	if err != nil {
 		log.Error("wlid key", "err", err)

@@ -30,7 +30,7 @@ func TestPlanEvent(t *testing.T) {
 
 func TestSuspendRestorePurgePersistAndSkipRedelivery(t *testing.T) {
 	dir := t.TempDir()
-	s, err := OpenStore(dir, time.Now)
+	s, err := testOpen(t, dir, time.Now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestSuspendRestorePurgePersistAndSkipRedelivery(t *testing.T) {
 	}
 
 	// The cursor and the standing survive a restart.
-	s, _ = OpenStore(dir, time.Now)
+	s, _ = testOpen(t, dir, time.Now)
 	if s.Cursor() != 1 || !s.Denied("acct-a") {
 		t.Fatalf("after reopen: cursor %d denied %v", s.Cursor(), s.Denied("acct-a"))
 	}
@@ -82,7 +82,7 @@ func TestSuspendRestorePurgePersistAndSkipRedelivery(t *testing.T) {
 	if ok, err := s.ApplyEvent(6, "acct-a", ActPurge); !ok || err != nil {
 		t.Fatal(ok, err)
 	}
-	s, _ = OpenStore(dir, time.Now)
+	s, _ = testOpen(t, dir, time.Now)
 	if len(s.ConsoleProfiles("123456789012")) != 0 || s.Denied("acct-a") {
 		t.Fatal("purge left the profile or the standing")
 	}
@@ -107,7 +107,7 @@ func (f *fakeEvents) PollEvents(_ context.Context, since uint64, _ int) ([]CoreE
 }
 
 func TestProcessEventsAppliesInOrderOnce(t *testing.T) {
-	s, _ := OpenStore("", nil)
+	s := NewMemoryStore(nil)
 	h := &Handler{Store: s}
 	tok, _ := s.NewToken("acct-b", "b@example.org")
 	src := &fakeEvents{evs: []CoreEvent{cev(7, "friend_requested", "acct-b"), cev(8, "account_banned", "acct-b")}}
@@ -123,7 +123,7 @@ func TestProcessEventsAppliesInOrderOnce(t *testing.T) {
 }
 
 func TestWLIDTicketRefusedForDeniedAccount(t *testing.T) {
-	s, _ := OpenStore("", nil)
+	s := NewMemoryStore(nil)
 	h := &Handler{Store: s, WLIDKey: make([]byte, 32)}
 	raw := h.sealTicket(magicTicket, WLIDTicket{Account: "acct-c", XUID: 1, Expires: time.Now().Add(time.Hour)})
 	if _, err := h.VerifyWLIDTicket(raw); err != nil {

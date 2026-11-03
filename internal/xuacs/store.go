@@ -1,6 +1,7 @@
 package xuacs
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
@@ -8,10 +9,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/openpak/x360-common/pgstate"
 )
 
 // TokenTTL is how long a 28-byte session token stays valid.
@@ -60,37 +63,69 @@ type standingRec struct {
 }
 
 // Store keeps the session tokens and the profiles xuacs issued (online XUID per
-// account; offline XUID and XenonKey per account and console). JSON, 0600,
-// atomic rename. An empty path keeps everything in memory.
+// account; offline XUID and XenonKey per account and console). It lives in
+// Postgres (schema x360_xuacs, document "state"); a nil pg keeps everything in
+// memory, which only tests use.
 type Store struct {
-	path string
-	now  func() time.Time
-	mu   sync.Mutex
-	d    stateFile
+	pg  *pgstate.Store
+	now func() time.Time
+	mu  sync.Mutex
+	d   stateFile
 }
 
-// OpenStore loads dir/xuacs.json, creating dir when missing.
-func OpenStore(dir string, now func() time.Time) (*Store, error) {
+const (
+	// Schema is the Postgres schema xuacs owns inside the x360 database.
+	Schema   = "x360_xuacs"
+	stateKey = "state"
+)
+
+func emptyState() stateFile {
+	return stateFile{Accounts: map[string]*accountRec{}, Tokens: map[string]*tokenRec{}}
+}
+
+// NewMemoryStore is a store that forgets on exit (tests).
+func NewMemoryStore(now func() time.Time) *Store {
 	if now == nil {
 		now = time.Now
 	}
-	s := &Store{now: now, d: stateFile{Accounts: map[string]*accountRec{}, Tokens: map[string]*tokenRec{}}}
-	if dir == "" {
-		return s, nil
+	return &Store{now: now, d: emptyState()}
+}
+
+// OpenStore opens the Postgres store in schema and loads the state. legacyFile,
+// when the database holds no state yet and the file exists, is imported once
+// (the file is left in place). An empty dsn is an error.
+func OpenStore(ctx context.Context, dsn, schema, legacyFile string, now func() time.Time) (*Store, error) {
+	if now == nil {
+		now = time.Now
 	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	pg, err := pgstate.Open(ctx, dsn, schema)
+	if err != nil {
 		return nil, err
 	}
-	s.path = filepath.Join(dir, "xuacs.json")
-	b, err := os.ReadFile(s.path)
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		return s, nil
-	case err != nil:
+	s := &Store{pg: pg, now: now, d: emptyState()}
+	found, err := pg.Load(ctx, stateKey, &s.d)
+	if err != nil {
+		pg.Close()
 		return nil, err
 	}
-	if err := json.Unmarshal(b, &s.d); err != nil {
-		return nil, fmt.Errorf("%s: %w", s.path, err)
+	if !found && legacyFile != "" {
+		b, err := os.ReadFile(legacyFile)
+		switch {
+		case err == nil:
+			if err := json.Unmarshal(b, &s.d); err != nil {
+				pg.Close()
+				return nil, fmt.Errorf("%s: %w", legacyFile, err)
+			}
+			if err := s.save(); err != nil {
+				pg.Close()
+				return nil, err
+			}
+			slog.Info("imported xuacs.json into Postgres", "accounts", len(s.d.Accounts), "tokens", len(s.d.Tokens),
+				"standing", len(s.d.Standing), "cursor", s.d.EventCursor)
+		case !errors.Is(err, os.ErrNotExist):
+			pg.Close()
+			return nil, err
+		}
 	}
 	if s.d.Accounts == nil {
 		s.d.Accounts = map[string]*accountRec{}
@@ -101,22 +136,23 @@ func OpenStore(dir string, now func() time.Time) (*Store, error) {
 	return s, nil
 }
 
+// Close releases the database pool.
+func (s *Store) Close() {
+	if s.pg != nil {
+		s.pg.Close()
+	}
+}
+
 // ErrDenied is an account the event stream has banned or closed.
 var ErrDenied = errors.New("account suspended")
 
 func (s *Store) save() error {
-	if s.path == "" {
+	if s.pg == nil {
 		return nil
 	}
-	b, err := json.MarshalIndent(&s.d, "", " ")
-	if err != nil {
-		return err
-	}
-	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o600); err != nil {
-		return err
-	}
-	return os.Rename(tmp, s.path)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	return s.pg.Save(ctx, stateKey, &s.d)
 }
 
 // NewToken issues a random 28-byte token bound to the account.
