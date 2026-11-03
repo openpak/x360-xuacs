@@ -16,6 +16,7 @@ import (
 
 	"github.com/openpak/x360-common/accountcore"
 	"github.com/openpak/x360-common/config"
+	"github.com/openpak/x360-common/httplog"
 	"github.com/openpak/x360-common/wire"
 	"github.com/openpak/x360-xuacs/internal/tlsfront"
 	"github.com/openpak/x360-xuacs/internal/xuacs"
@@ -87,7 +88,7 @@ func main() {
 			log.Error("wlid ca", "err", err)
 			os.Exit(2)
 		}
-		tsrv := front.Serve(&http.Server{Handler: h.WLID(), ReadHeaderTimeout: 10 * time.Second,
+		tsrv := front.Serve(&http.Server{Handler: httplog.Wrap(h.WLID()), ReadHeaderTimeout: 10 * time.Second,
 			ErrorLog: slog.NewLogLogger(log.Handler(), slog.LevelInfo)})
 		tln, err := net.Listen("tcp", cfg.TLSAddr)
 		if err != nil {
@@ -104,7 +105,7 @@ func main() {
 		go func() { <-ctx.Done(); tsrv.Close() }()
 	}
 	if cfg.InternalAddr != "" {
-		isrv := &http.Server{Addr: cfg.InternalAddr, Handler: h.Internal(cfg.InternalKey), ReadHeaderTimeout: 10 * time.Second}
+		isrv := &http.Server{Addr: cfg.InternalAddr, Handler: httplog.Wrap(h.Internal(cfg.InternalKey)), ReadHeaderTimeout: 10 * time.Second}
 		go func() {
 			log.Info("x360-xuacs internal API listening", "addr", cfg.InternalAddr)
 			if err := isrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -114,7 +115,7 @@ func main() {
 		}()
 		go func() { <-ctx.Done(); isrv.Close() }()
 	}
-	srv := &http.Server{Handler: wire.Guard(os.Getenv("X360_GATEWAY_KEY"), h), ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Handler: httplog.Wrap(wire.Guard(os.Getenv("X360_GATEWAY_KEY"), h)), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		<-ctx.Done()
 		sc, cancel := context.WithTimeout(context.Background(), 5*time.Second)

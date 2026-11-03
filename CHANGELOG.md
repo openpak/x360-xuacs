@@ -1,5 +1,7 @@
 # Changelog
 
+- 2026-11-03: v0.11.1: Every request logs one stderr line, `http <method> <path> -> <status> <duration>ms` (x360-common v0.5.1 `httplog`): no query, headers, cookies, tokens or bodies; `/healthz` skipped.
+
 - 2026-11-03: v0.11.0 state moves to Postgres (schema `x360_xuacs` in database `x360`, `X360_XUACS_DATABASE_URL`, required:
   the service refuses to start without it). An existing `xuacs.json` is imported once on first start and left in place.
   The RSA key and WLID key stay files in `X360_XUACS_STATE`.
