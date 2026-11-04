@@ -16,6 +16,7 @@ import (
 
 	"github.com/openpak/x360-common/accountcore"
 	"github.com/openpak/x360-common/config"
+	"github.com/openpak/x360-common/erase"
 	"github.com/openpak/x360-common/httplog"
 	"github.com/openpak/x360-common/wire"
 	"github.com/openpak/x360-xuacs/internal/tlsfront"
@@ -104,6 +105,9 @@ func main() {
 		}()
 		go func() { <-ctx.Done(); tsrv.Close() }()
 	}
+	erase.Serve(ctx, "x360-xuacs", func(_ context.Context, account string) (int, error) {
+		return store.Erase(account)
+	})
 	if cfg.InternalAddr != "" {
 		isrv := &http.Server{Addr: cfg.InternalAddr, Handler: httplog.Wrap(h.Internal(cfg.InternalKey)), ReadHeaderTimeout: 10 * time.Second}
 		go func() {

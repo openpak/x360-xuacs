@@ -3,6 +3,9 @@ package xuacs
 import (
 	"context"
 	"errors"
+	"io"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/openpak/x360-common/accountcore"
@@ -88,3 +91,26 @@ func graphHandler(t *testing.T, c *graphCore) *Handler {
 }
 
 const fixtureUser = "0009005f5139dadb:owner"
+
+func TestAccountXUIDsNeverAllocates(t *testing.T) {
+	h := &Handler{Store: NewMemoryStore(nil)}
+	srv := httptest.NewServer(h.Internal("k"))
+	defer srv.Close()
+	post := func() string {
+		req, _ := http.NewRequest("POST", srv.URL+"/internal/v1/account-xuids", strings.NewReader(`{"account":"nobody"}`))
+		req.Header.Set(InternalKeyHeader, "k")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		b, _ := io.ReadAll(resp.Body)
+		return string(b)
+	}
+	if got := strings.TrimSpace(post()); got != `{"xuids":[]}` {
+		t.Fatalf("body %q", got)
+	}
+	if len(h.Store.XUIDs("nobody")) != 0 || len(h.Store.d.Accounts) != 0 {
+		t.Fatal("lookup allocated a profile")
+	}
+}

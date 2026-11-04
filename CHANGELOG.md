@@ -1,5 +1,7 @@
 # Changelog
 
+- 2026-11-04: v0.12.0: Account erasure (card #120). `DELETE /internal/accounts/{account_id}/data` with `Authorization: Bearer $ACCOUNT_ERASE_KEY` on a separate listener `ERASE_ADDR` (default `:9099`, container network only, never published; not served while the key is unset). Reply `{"service":"x360-xuacs","rows":N}`; one `account erased` log line per erasure. Deletes the account's profile (online XUID, per-console offline XUIDs and XenonKeys, gamertags), session tokens (with the sign-in email) and standing; the `account_deleted` event already purged the same and now logs the `account erased` line. New `POST /internal/v1/account-xuids` on the internal API lists an account's held XUIDs without allocating any (client: `xuacsapi.AccountXUIDs`), which the other x360 services use to find XUID-keyed data. Erase this service LAST: the others resolve XUIDs through it.
+
 - 2026-11-03: v0.11.2: No secrets in logs: `request` and `wlid request` no longer log the user agent, content type, schema header or body hex, and the debug response-body hex is gone. Test added.
 
 - 2026-11-03: v0.11.1: Every request logs one stderr line, `http <method> <path> -> <status> <duration>ms` (x360-common v0.5.1 `httplog`): no query, headers, cookies, tokens or bodies; `/healthz` skipped.

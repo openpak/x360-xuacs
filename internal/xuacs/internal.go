@@ -11,6 +11,7 @@ package xuacs
 //
 //	POST /internal/v1/identity          {"account"}      -> {"online_xuid","gamertag"}
 //	POST /internal/v1/online-xuid       {"account"}      -> {"online_xuid"}
+//	POST /internal/v1/account-xuids     {"account"}      -> {"xuids":[...]}         (held ones only, never allocates)
 //	POST /internal/v1/xuid-account      {"online_xuid"}  -> {"account"}            (404: none)
 //	POST /internal/v1/console-profiles  {"console"}      -> {"profiles":[{"account","online_xuid"}]}
 //	POST /internal/v1/wlid-ca           {}               -> {"ca_pem"}
@@ -70,6 +71,14 @@ func (h *Handler) Internal(key string) http.Handler {
 			out, status = h.identityAPI(r, in.Account)
 		case "/internal/v1/online-xuid":
 			out, status = h.onlineXUIDAPI(r, in.Account)
+		case "/internal/v1/account-xuids":
+			if in.Account == "" {
+				out, status = errBody{"account required"}, http.StatusBadRequest
+				break
+			}
+			out, status = struct {
+				XUIDs []string `json:"xuids"`
+			}{append([]string{}, h.Store.XUIDs(in.Account)...)}, http.StatusOK
 		case "/internal/v1/xuid-account":
 			out, status = h.xuidAccountAPI(in.Online)
 		case "/internal/v1/console-profiles":

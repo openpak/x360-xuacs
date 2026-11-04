@@ -359,9 +359,7 @@ func (s *Store) ApplyEvent(version uint64, account string, a Action) (applied bo
 	case ActRestore:
 		st.Closing = false
 	case ActPurge:
-		delete(s.d.Accounts, account)
-		delete(s.d.Standing, account)
-		s.dropTokensLocked(account)
+		s.eraseLocked(account)
 	}
 	switch a {
 	case ActBan, ActUnban, ActSuspend, ActRestore:
@@ -374,6 +372,79 @@ func (s *Store) ApplyEvent(version uint64, account string, a Action) (applied bo
 	}
 	s.d.EventCursor = version
 	return true, s.save()
+}
+
+// eraseLocked removes everything held for the account (profile and per-console
+// records, tokens, standing) and returns how many records that was.
+func (s *Store) eraseLocked(account string) int {
+	n := 0
+	if a := s.d.Accounts[account]; a != nil {
+		n += 1 + len(a.Consoles)
+		delete(s.d.Accounts, account)
+	}
+	if s.d.Standing[account] != nil {
+		n++
+		delete(s.d.Standing, account)
+	}
+	for _, t := range s.d.Tokens {
+		if t.Account == account {
+			n++
+		}
+	}
+	s.dropTokensLocked(account)
+	return n
+}
+
+// Erase deletes everything held for the account and persists the change. It
+// returns the number of records removed (0 on a repeat). The account's
+// XUIDs are released with it.
+func (s *Store) Erase(account string) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	n := s.eraseLocked(account)
+	if n == 0 {
+		return 0, nil
+	}
+	return n, s.save()
+}
+
+// recordsOf counts what Erase would remove.
+func (s *Store) recordsOf(account string) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	n := 0
+	if a := s.d.Accounts[account]; a != nil {
+		n += 1 + len(a.Consoles)
+	}
+	if s.d.Standing[account] != nil {
+		n++
+	}
+	for _, t := range s.d.Tokens {
+		if t.Account == account {
+			n++
+		}
+	}
+	return n
+}
+
+// XUIDs lists the account's online and offline XUIDs without allocating any.
+func (s *Store) XUIDs(account string) []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	a := s.d.Accounts[account]
+	if a == nil {
+		return nil
+	}
+	var out []string
+	if a.Online != "" {
+		out = append(out, a.Online)
+	}
+	for _, c := range a.Consoles {
+		if c.Offline != "" {
+			out = append(out, c.Offline)
+		}
+	}
+	return out
 }
 
 func (s *Store) dropTokensLocked(account string) {

@@ -96,12 +96,19 @@ func (h *Handler) ProcessEvents(ctx context.Context, src EventSource) (int, erro
 			return 0, errors.New("core event without id")
 		}
 		a := PlanEvent(e)
+		rows := 0
+		if a == ActPurge {
+			rows = h.Store.recordsOf(e.AccountID)
+		}
 		applied, err := h.Store.ApplyEvent(e.Version, e.AccountID, a)
 		if err != nil {
 			return 0, err
 		}
 		if applied && a != ActNone {
 			h.log().Info("account event", "type", e.Type, "version", e.Version)
+		}
+		if applied && a == ActPurge {
+			h.log().Info("account erased", "account", e.AccountID, "rows", rows, "service", "x360-xuacs")
 		}
 	}
 	return len(evs), nil

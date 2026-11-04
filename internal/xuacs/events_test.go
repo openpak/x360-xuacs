@@ -190,3 +190,34 @@ func TestCoreEventsPoll(t *testing.T) {
 		t.Fatal("a refused poll must be an error")
 	}
 }
+
+func TestEraseRemovesOneAccountAndRepeats(t *testing.T) {
+	s := NewMemoryStore(time.Now)
+	tokA, _ := s.NewToken("acct-a", "a@example.org")
+	tokB, _ := s.NewToken("acct-b", "b@example.org")
+	onA, _ := s.OnlineXUID("acct-a", 0)
+	onB, _ := s.OnlineXUID("acct-b", 0)
+	offA, _, _ := s.Profile("acct-a", "123456789012", "Alpha")
+	if got := s.XUIDs("acct-a"); len(got) != 2 {
+		t.Fatalf("xuids %v (online %x offline %x)", got, onA, offA)
+	}
+	n, err := s.Erase("acct-a")
+	if err != nil || n != 3 { // account + 1 console + 1 token
+		t.Fatalf("erase: %d %v", n, err)
+	}
+	if n, err := s.Erase("acct-a"); err != nil || n != 0 {
+		t.Fatalf("second erase: %d %v", n, err)
+	}
+	if _, _, ok := s.Token(tokA); ok {
+		t.Fatal("token survived")
+	}
+	if len(s.XUIDs("acct-a")) != 0 {
+		t.Fatal("xuids survived")
+	}
+	if _, _, ok := s.Token(tokB); !ok {
+		t.Fatal("other account's token dropped")
+	}
+	if got, _ := s.OnlineXUID("acct-b", 0); got != onB {
+		t.Fatal("other account's profile changed")
+	}
+}

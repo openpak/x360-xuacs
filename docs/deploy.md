@@ -15,3 +15,11 @@ this service. Licensed AGPL-3.0, see LICENSE.
 ## Shared library
 
 The shared Go library [`x360-common`](https://github.com/openpak/x360-common) is consumed with `replace` and a committed `vendor/`. After changing x360-common, run `go mod vendor` here and commit.
+
+## Account erasure
+
+`DELETE /internal/accounts/{account_id}/data` with `Authorization: Bearer $ACCOUNT_ERASE_KEY` on a separate listener `ERASE_ADDR` (default `:9099`, container network only, never published; not served while the key is unset). Reply `{"service":"x360-xuacs","rows":N}`; one `account erased` log line per erasure.
+
+Website step name: `x360-xuacs`.
+
+Deletes the `accounts` record (online XUID, console profiles), the account's `tokens` and `standing` in the `state` document. Kept: nothing per account. The `account_deleted` event runs the same purge (own keys only). **Order: run this step last**; the other x360 services find the account's XUIDs through `POST /internal/v1/account-xuids`. Note `RunReconcile` re-creates a profile for any account the core lists as active, so call this only for accounts that are closed in the core (deletion pending/deleted).
